@@ -2,12 +2,12 @@ import math, matplotlib.pyplot as plt, numpy as np, pandas as pd, seaborn as sns
 from numpy import load
 
 #Fatoração e solução por LU
-def getTamanhoDeMatriz(matriz):
+def lenMatrix(matriz):
 	numero_linhas = len(matriz[:, 0]) 
 	numero_colunas = len(matriz[0, :])
 	return numero_linhas, numero_colunas
 
-def gaussEscalona(matriz):
+def escalonamento(matriz):
 	array = matriz.copy()
 	multiplicadores = np.zeros([len(array[0,:]), len(array[:,0])])
 	for i in range(len(array[:, 0])-1):
@@ -21,7 +21,7 @@ def gaussEscalona(matriz):
 	return array, multiplicadores
 
 def resolveTriangularInf(matrizTriangular, respostas):
-	linhas,colunas = getTamanhoDeMatriz(matrizTriangular)
+	linhas,colunas = lenMatrix(matrizTriangular)
 	R = respostas
 	M = matrizTriangular
 	X  = np.zeros([linhas, 1])
@@ -33,7 +33,7 @@ def resolveTriangularInf(matrizTriangular, respostas):
 	return X
 
 def resolveTriangularSup(matrizTriangular, respostas):
-	linhas,colunas = getTamanhoDeMatriz(matrizTriangular)
+	linhas,colunas = lenMatrix(matrizTriangular)
 	R = respostas
 	M = matrizTriangular
 	X  = np.zeros([linhas, 1])
@@ -45,10 +45,11 @@ def resolveTriangularSup(matrizTriangular, respostas):
 	return X
 
 def achaSolucao(M, R):
-	upper, lower  = gaussEscalona(M)
+	upper, lower  = escalonamento(M)
 	Y = resolveTriangularInf(lower, R)
 	X = resolveTriangularSup(upper, Y)
 	return X
+# funções básicas
 
 # Identidade ordem n
 def Identidade(n):
@@ -115,6 +116,77 @@ def deslocaMatriz(A):
             else:
                 B[i][j] = A[i-1][j-1]
     return B
+def deslocaMatriz2(A, dimensional):
+    m = A.shape[0]
+    n = A.shape[1]
+    B = MatrizZero(m,n)
+    for i in range(m):
+        for j in range(n):
+            if i < 1 or j < dimensional:
+                B[i][j] = 0
+            else:
+                B[i][j] = A[i-1][j-dimensional]
+    return B
+
+#primeiro elemento[0][0] igual a 1 e os demais zeros
+def first(dimensao):
+    A = np.zeros((1, dimensao))
+    A[0][0]=1
+    return A
+
+def MatrizBelow(dimensao):
+    A = np.kron(np.identity(dimensao), first(dimensao))
+    B = np.zeros((dimensao -1,dimensao*dimensao)) 
+    C = np.vstack([A, B]) #acrescenta B linhas à matriz A
+    R = np.zeros((2*dimensao -1, dimensao*dimensao))
+    i = 1
+    D = C
+    while i < dimensao:
+        D = deslocaMatriz(D)
+        R = R + D
+        i = i + 1
+    return R +C
+
+def MatrizUp(dimensao):
+    A = DiagSec(dimensao)
+    B = np.zeros((dimensao -1,dimensao)) 
+    C = np.vstack([A, B]) #acrescenta B linhas à matriz A
+    D = np.zeros((2*dimensao - 1, dimensao*(dimensao -1)))
+    E = np.hstack([C, D])
+    R = np.zeros((2*dimensao -1, dimensao*dimensao))
+    i = 1
+    F = E
+    while i < dimensao:
+        F = deslocaMatriz2(F,dimensao)
+        R = R + F
+        i = i + 1
+    return R + E
+
+def plotaImages(image, sol1, sol2, sol3):
+    plt.figure(figsize=(10,6))
+    plt.subplot(2,2,1)
+    plt.axis('off')
+    plt.title("Imagem Original")
+    img = mpimg.imread(image)
+    imgplot = plt.imshow(img)
+
+    plt.subplot(2,2,2)
+    plt.axis('off')
+    plt.title("\u03B4: 0.001")
+    plt.imshow(sol1)
+
+    plt.subplot(2,2,3)
+    plt.axis('off')
+    plt.title("\u03B4: 0.01")
+    plt.imshow(sol2)
+
+    plt.subplot(2,2,4)
+    plt.axis('off')
+    plt.title("\u03B4: 0.1")
+    plt.imshow(sol3)
+
+
+    plt.show()
 
 #Matriz A
 def MatrizA (entrada):
@@ -122,6 +194,14 @@ def MatrizA (entrada):
     ParteInferior = np.kron(Identidade(entrada), MatrizNUns(1, entrada, 1))
     Soma = np.kron(MatrizNUns(2,1,1), ParteSuperior) + np.kron(MatrizNUns(2,1,2), ParteInferior)
     return Soma
+
+def MatrizA2(dimensao):
+    A = MatrizA(dimensao)
+    B = MatrizUp(dimensao)
+    C = MatrizBelow(dimensao)
+    D = np.vstack([A, B])
+    E = np.vstack([D, C])
+    return E
 
 #Matriz Requerida At*A + delta*I
 def Requerida (dimensao, delta):
@@ -134,22 +214,22 @@ def Requerida (dimensao, delta):
 path = sys.argv[1]
 if ("im1" == path):
     pathimagem = os.path.join(path, "im1.png")
-    pathnpy = os.path.join(path, "p1.npy")
+    pathnpy = os.path.join(path, "p2.npy")
 elif ("im2" == path):
     pathimagem = os.path.join(path, "im2.png")
     pathnpy = os.path.join(path, "p2.npy")
 elif ("im3" == path):
     pathimagem = os.path.join(path, "im3.png")
-    pathnpy = os.path.join(path, "p3.npy")
+    pathnpy = os.path.join(path, "p2.npy")
 else:
     print ("Siga o modelo do PDF: python tomo(x).py im(x)")
 
 #Coletando vetor p
 p = load(pathnpy)
-n = int(len(p)/2) 
+n = int((len(p) + 2)/6) #perceba que a relação da quantidade de p com n muda no Ex2.
 
 #Calculando A e sua transposta 
-A = MatrizA(n)
+A = MatrizA2(n)
 At = Transposta(A)
 
 #Req = At*A + delta*I (para deltas respectivos)
@@ -159,13 +239,17 @@ Req3 = Requerida(n, 0.1)
 
 #Solução do sist linear
 newp = np.dot(At, p)
+print(len(newp))
+f1 = achaSolucao(Req1, newp)
+f2 = achaSolucao(Req2, newp)
+f3 = achaSolucao(Req3, newp)
 
+tamanho = int(math.sqrt(len(newp)))
+print (f1)
+m1 = Transposta(f1.reshape(tamanho, tamanho))
+m2 = Transposta(f2.reshape(tamanho, tamanho))
+m3 = Transposta(f3.reshape(tamanho, tamanho))
 
-f1 = achaSolucao(Req2, newp)
-f2 = achaSolucao(Req3, newp)
-f3 = achaSolucao(Req4, newp)
-
-
-m1 = Transposta(f2.reshape(int(math.sqrt(len(f2))),int(math.sqrt(len(f2)))))
-m2 = f3.reshape(int(math.sqrt(len(f3))),int(math.sqrt(len(f3))))
-m3 = f4.reshape(int(math.sqrt(len(f4))),int(math.sqrt(len(f4))))
+#plotando imagens
+plotaImages(pathimagem, m1, m2, m3)
+print(m1)

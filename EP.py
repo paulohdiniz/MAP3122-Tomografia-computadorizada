@@ -1,29 +1,40 @@
 import math, matplotlib.pyplot as plt, numpy as np, pandas as pd, seaborn as sns, matplotlib.image as mpimg, pprint
 
-#Fatoração LU
+#Fatoração e solução por LU
 
+def backward(U, y):
+    x = np.zeros_like(y)
+    for i in range(len(x), 0, -1):
+      x[i-1] = (y[i-1] - np.dot(U[i-1, i:], x[i:])) / U[i-1, i-1]
+    return x
+def forward(L, b):
+    y = []
+    for i in range(len(b)):
+        y.append(b[i])
+        for j in range(i):
+            y[i]=y[i]-(L[i, j]*y[j])
+        y[i] = y[i]/L[i, i]
+    return y
 def FatLU(A):
-    
-    n = A.shape[0]
-    
-    U = np.zeros((n, n), dtype=np.double)
-    L = np.eye(n, dtype=np.double)
-    
-    for k in range(n):
-        
-        U[k, k:] = A[k, k:] - L[k,:k] @ U[:k,k:]
-        L[(k+1):,k] = (A[(k+1):,k] - L[(k+1):,:] @ U[:,k]) / U[k, k]
-    
+    L = np.zeros_like(A,dtype=float)
+    U = np.zeros_like(A,dtype=float)
+    N = np.size(A,0)
+    for k in range(N):
+        L[k, k] = 1
+        U[k, k] = (A[k, k] - np.dot(L[k, :k], U[:k, k])) / L[k, k]
+        for j in range(k+1, N):
+            U[k, j] = (A[k, j] - np.dot(L[k, :k], U[:k, j])) / L[k, k]
+        for i in range(k+1, N):
+            L[i, k] = (A[i, k] - np.dot(L[i, :k], U[:k, k])) / U[k, k]
     return L, U
-
-A = np.array([[1, 4, 5], [6, 8, 22], [32, 5., 5]])
-L, U = FatLU(A)
-
-
-
-
-print(L)
-
+def SolucaoLU(L, U, b):
+    y = forward(L,b)
+    x = backward(U,y)
+    return x
+def SolucaoSistema(A, b):
+    L, U = FatLU(A)
+    x = SolucaoLU(L,U,b)
+    return x
 
 # funções básicas
 
